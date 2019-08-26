@@ -3,6 +3,7 @@ package main
 import (
     //"fmt"
 	"log"
+    "math"
     "image/color"
 
 	"github.com/hajimehoshi/ebiten"
@@ -14,11 +15,21 @@ const width = 640
 const sq_side = 50
 const acc_g = 2
 
+/*
 var posx = 100
 var posy = 100
 var ds = 2
 var vely = 0
 var jumping = false
+*/
+
+type ErrorString struct {
+    s string
+}
+
+func (e *ErrorString) Error() string {
+    return e.s
+}
 
 type Root struct {
     Objects []ScreenObject
@@ -28,15 +39,20 @@ type Root struct {
 func NewRoot() *Root {
     plat1 := NewPlatform(300, 400, 75, 20)
     plat2 := NewPlatform(40, 200, 75, 20)
+    circ := NewCircle(500, 100, 30)
     //plat2 := NewPlatform(200, 200, 75, 20)
     //plat3 := NewPlatform(400, 300, 75, 20)
     //plat4 := NewPlatform(425, 100, 75, 20)
     you := NewYouSquare(20)
-    objects := []ScreenObject{plat1, plat2}
+    objects := []ScreenObject{plat1, plat2, circ}
     return &Root{objects, you}
 }
 
 func (self *Root) Update(screen *ebiten.Image) error {
+    if ebiten.IsKeyPressed(ebiten.KeyControl) && ebiten.IsKeyPressed(ebiten.KeyQ) {
+        e := ErrorString{"Quit"}
+        return &e
+    }
     for _,obj := range self.Objects {
         obj.Update(screen)
     }
@@ -137,7 +153,7 @@ func NewPlatform(x,y, width, height float64) *Platform {
 }
 
 func (self *Platform) Update(screen *ebiten.Image) {
-    gray := color.RGBA{0xaa,0xaa,0xaa, 0xaa}
+    gray := color.RGBA{0xaa,0xaa,0xaa, 0xff}
     ebitenutil.DrawRect(
         screen, float64(self.PosX), float64(self.PosY),
         self.Width, self.Height, gray)
@@ -157,6 +173,49 @@ func (self *Platform) GetWidth() float64 {
 
 func (self *Platform) GetHeight() float64 {
     return self.Height
+}
+
+type Circle struct {
+    PosX float64
+    PosY float64
+    Side float64
+}
+
+func NewCircle(x,y, side float64) *Circle {
+    return &Circle{x, y, side}
+}
+
+func (self *Circle) Update(screen *ebiten.Image) {
+    white := color.RGBA{0xff, 0xff, 0xff, 0xff}
+    r := self.Side/2
+    x := self.PosX + r
+    y := self.PosY + r
+    for i:=self.PosX;i<self.PosX+self.Side;i++ {
+        for j := self.PosY;j<self.PosY+self.Side;j++ {
+            x_0 := float64(i)
+            y_0 := float64(j)
+            dist := math.Sqrt((math.Pow((x_0-x),2) + math.Pow((y_0-y),2)))
+            if dist < r {
+                ebitenutil.DrawRect(screen, x_0, y_0, 1, 1, white)
+                }
+            }
+        }
+}
+
+func (self *Circle) GetPosX() float64 {
+    return self.PosX
+}
+
+func (self *Circle) GetPosY() float64 {
+    return self.PosY
+}
+
+func (self *Circle) GetWidth() float64 {
+    return self.Side
+}
+
+func (self *Circle) GetHeight() float64 {
+    return self.Side
 }
 
 type YouSquare struct {
@@ -266,8 +325,6 @@ func (self *YouSquare) Update(screen *ebiten.Image, min_y, max_y float64) {
         screen, float64(self.PosX), float64(self.PosY),
         self.Side, self.Side, rect_color)
 }
-
-
 
 
 func main() {
